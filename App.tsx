@@ -1,131 +1,181 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import 'react-native-gesture-handler';
+import React, {useEffect} from 'react';
+import messaging from '@react-native-firebase/messaging';
+import {PermissionsAndroid, Platform, Alert} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useDispatch, useSelector} from 'react-redux';
+import Navigation from './src/navigation/Navigation';
+import {useTranslation} from './src/context/LanguageContext';
+import Geolocation from '@react-native-community/geolocation';
+import './src/lang/i18n';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import {getLang} from './src/helper/ChangeLang';
+import strings from './src/lang/i18n.js';
+import {getPreciseDistance} from 'geolib';
+import notifee, {AndroidImportance} from '@notifee/react-native';
+import {RootState} from './src/store/reducers'; // Adjust according to your store structure
+import {useAppSelector} from './src/Hooks/reduxHooks';
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+  getAppToken,
+  getOneTimeLocation,
+  setSearching,
+  updateLocationByNotification,
+} from './src/store/slices/locationSlice';
+import {LanguageContext} from './src/Context/LanguageContext';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+const App: React.FC = () => {
+  const dispatch = useDispatch();
+  const userCurrent = useAppSelector(state => state.location.location);
+  const language = useAppSelector(state => state.language.language);
+  const createNotificationChannel = async () => {
+    await notifee.createChannel({
+      id: 'bus',
+      name: 'Traveler App',
+      sound: 'alarm',
+      importance: AndroidImportance.HIGH,
+    });
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  createNotificationChannel();
 
-  return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
+  const checkDistance = async (langitude: string, longitude: string) => {
+    try {
+      const userLocationStr = await AsyncStorage.getItem('UsersLocation');
+      if (!userLocationStr) return;
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+      const userLocation = JSON.parse(userLocationStr);
+      const targetLocation = {
+        latitude: parseFloat(langitude),
+        longitude: parseFloat(longitude),
+      };
+
+      const preciseDistance = getPreciseDistance(targetLocation, userLocation);
+      const alarmValue = await AsyncStorage.getItem('AlarmDistance');
+      const threshold = Number(alarmValue);
+      const distanceInKm = preciseDistance / 1000;
+
+      console.log(distanceInKm, 'Distance in KM');
+
+      if (distanceInKm <= threshold) {
+        await createNotificationChannel();
+        await notifee.displayNotification({
+          title: 'Bus Tracking',
+          body: `The Bus Operator is ${distanceInKm.toFixed(2)} km away`,
+          android: {
+            channelId: 'bus',
+            sound: 'alarm',
+            pressAction: {
+              id: 'default',
+            },
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error checking distance:', error);
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          {
+            title: 'Notification Permission',
+            message:
+              'This app needs notification permission to show background service notifications',
+            buttonPositive: 'OK',
+            buttonNegative: 'Cancel',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('Notification permission granted');
+        } else {
+          Alert.alert(
+            'Notification permission denied',
+            'Background tracking notification will not show.',
+          );
+        }
+      } catch (err) {
+        console.warn('Notification permission error', err);
+      }
+    } else {
+      // For iOS or Android < 33, permission not required or handled differently
+      console.log(
+        'Notification permission not required for this platform/version',
+      );
+    }
+  };
+
+  const requestUserPermission = async () => {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      console.log('Authorization status:', authStatus);
+    }
+  };
+
+  const selectedLang = async () => {
+    const langData = await getLang();
+    if (langData) {
+      strings.setLanguage(langData);
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+    selectedLang();
+    requestUserPermission();
+
+    const requestLocationPermission = async () => {
+      if (Platform.OS === 'ios') {
+        dispatch(getOneTimeLocation());
+      } else {
+        try {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Access Required',
+              message: 'This App needs to access your location',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            dispatch(getOneTimeLocation());
+          } else {
+            Alert.alert('Permission Required');
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+
+    requestLocationPermission();
+    dispatch(getAppToken());
+
+    const unsubscribe = messaging().onMessage(async message => {
+      console.log(message, 'Firebase Message Received');
+      dispatch(setSearching(false));
+      dispatch(
+        updateLocationByNotification({
+          latitude: message.data.langitude,
+          longitude: message.data.longitude,
+          locationTime: message.data.updatedTime,
+        }),
+      );
+      await checkDistance(message.data.langitude, message.data.longitude);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  return <Navigation />;
+};
 
 export default App;
