@@ -130,7 +130,8 @@ const BusOperator = () => {
       error => {
         console.log('Location error:', error.message);
       },
-      {enableHighAccuracy: false, timeout: 10000, maximumAge: 10000},
+      {enableHighAccuracy: false,    timeout: 5000,
+            maximumAge: 15000,},
     );
   };
 

@@ -36,6 +36,7 @@ import {useTranslation} from 'react-i18next';
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
 const CurrentRoutesScreen = () => {
+  
   const {t} = useTranslation();
   const [routes, setRoutes] = useState([]);
   const routesRef = useRef([]); // <-- Ref to hold latest routes
@@ -202,16 +203,32 @@ const CurrentRoutesScreen = () => {
 
           const responses = await Promise.all(promises);
 
-          console.log(responses, 'ResponseFromupdatelocation');
+    responses.forEach((response, index) => {
+
+   showMessage({message: `${response.data}`, type: 'success'});
+  console.log(`Response ${index}:`, response.data);
+});
+
           // Optionally handle each response here
         } catch (err) {
+          showMessage({
+            type:"danger",
+            message:"'Location send failed"
+
+          })
           console.log('Location send failed:', err.response || err.message);
         }
       },
       error => {
+            showMessage({
+            type:"danger",
+            message:error.message
+
+          })
         console.log('Location error:', error.message);
       },
-      {enableHighAccuracy: true, timeout: 10000, maximumAge: 10000},
+      {enableHighAccuracy: false,
+            maximumAge: 15000,},
     );
   };
 

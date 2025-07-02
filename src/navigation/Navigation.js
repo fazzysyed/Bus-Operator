@@ -27,12 +27,14 @@ const Navigation = () => {
   const user = useAppSelector(state => state.user);
   return (
     <SafeAreaProvider>
-      {Platform.OS === 'android' && (
+      {/* {Platform.OS === 'android' && (
         <View style={{height: 50, backgroundColor: 'blue'}} />
-      )}
+      )} */}
       <SafeAreaView
         style={{
           flex: 1,
+              paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+
 
           backgroundColor: '#fff',
         }}>

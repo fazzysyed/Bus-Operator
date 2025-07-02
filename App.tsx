@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import messaging from '@react-native-firebase/messaging';
-import {PermissionsAndroid, Platform, Alert} from 'react-native';
+import {PermissionsAndroid, Platform, Alert, View, Text, Button, Linking} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch, useSelector} from 'react-redux';
 import Navigation from './src/navigation/Navigation';
@@ -25,6 +25,8 @@ import {LanguageContext} from './src/Context/LanguageContext';
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
+    const [permissionsGranted, setPermissionsGranted] = useState(false);
+
   const userCurrent = useAppSelector(state => state.location.location);
   const language = useAppSelector(state => state.language.language);
   const createNotificationChannel = async () => {
@@ -125,12 +127,8 @@ const App: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    requestNotificationPermission();
-    selectedLang();
-    requestUserPermission();
 
-    const requestLocationPermission = async () => {
+     const requestLocationPermission = async () => {
       if (Platform.OS === 'ios') {
         dispatch(getOneTimeLocation());
       } else {
@@ -145,10 +143,19 @@ const App: React.FC = () => {
               buttonPositive: 'OK',
             },
           );
+
+          console.log(granted)
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+
+
+                      setPermissionsGranted(true);
+
             dispatch(getOneTimeLocation());
+            
           } else {
-            Alert.alert('Permission Required');
+                      setPermissionsGranted(false);
+
+            
           }
         } catch (err) {
           console.warn(err);
@@ -156,7 +163,19 @@ const App: React.FC = () => {
       }
     };
 
-    requestLocationPermission();
+
+  useEffect(()=>{
+
+  setTimeout(()=>{
+      requestLocationPermission();
+  },1000)
+  },[])
+  useEffect(() => {
+    requestNotificationPermission();
+    selectedLang();
+    requestUserPermission();
+
+ 
     dispatch(getAppToken());
 
     const unsubscribe = messaging().onMessage(async message => {
@@ -174,6 +193,35 @@ const App: React.FC = () => {
 
     return unsubscribe;
   }, []);
+
+
+    if (!permissionsGranted) {
+    // Prevent app usage here by showing a message or blank screen
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+          backgroundColor:"#ffffff",
+        }}
+      >
+        <Text style={{color:"#000",marginBottom:10}}>Permission is required to use this app.</Text>
+     <Button
+  title="Settings"
+  onPress={() => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings(); // For Android
+    }
+  }}
+/>
+      </View>
+    );
+  }
+
 
   return <Navigation />;
 };
