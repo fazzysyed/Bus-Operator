@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
-  PermissionsAndroid,
+  
   Platform,
 } from 'react-native';
 import axios from 'axios';
@@ -28,7 +28,7 @@ import {Swipeable} from 'react-native-gesture-handler';
 import {showMessage} from 'react-native-flash-message';
 import Geolocation from '@react-native-community/geolocation';
 import BackgroundService from 'react-native-background-actions';
-import socket from '../../helper/Socket';
+
 import {getUniqueId} from 'react-native-device-info';
 import {setUser} from '../../store/slices/userSlice';
 import {useDispatch} from 'react-redux';
@@ -58,20 +58,6 @@ const CurrentRoutesScreen = () => {
     }, []),
   );
 
-  useEffect(() => {
-    requestPermissions();
-
-
-  }, []);
-
-  const requestPermissions = async () => {
-    if (Platform.OS === 'android') {
-      await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-      ]);
-    }
-  };
 
   const fetchData = async (isRefreshing = false) => {
     if (!isRefreshing) setLoading(true);
@@ -205,26 +191,26 @@ const CurrentRoutesScreen = () => {
 
     responses.forEach((response, index) => {
 
-   showMessage({message: `${response.data}`, type: 'success'});
+  //  showMessage({message: `${response.data}`, type: 'success'});
   console.log(`Response ${index}:`, response.data);
 });
 
           // Optionally handle each response here
         } catch (err) {
-          showMessage({
-            type:"danger",
-            message:"'Location send failed"
+          // showMessage({
+          //   type:"danger",
+          //   message:"'Location send failed"
 
-          })
+          // })
           console.log('Location send failed:', err.response || err.message);
         }
       },
       error => {
-            showMessage({
-            type:"danger",
-            message:error.message
+          //   showMessage({
+          //   type:"danger",
+          //   message:error.message
 
-          })
+          // })
         console.log('Location error:', error.message);
       },
       {enableHighAccuracy: false,
@@ -232,7 +218,17 @@ const CurrentRoutesScreen = () => {
     );
   };
 
-  const handleDelete = item => {
+  const handleDelete = async item => {
+              const getAppToken = await getUniqueId();
+
+    console.log(  {
+                headers: {Token: user.token},
+                data: {
+                  vehicleId: item.vehicleId,
+                  routeItemId: item.routeItemId,
+                  appToken: getAppToken,
+                },
+              },)
     Alert.alert('Delete Route', 'Are you sure?', [
       {text: 'Cancel'},
       {
@@ -252,15 +248,15 @@ const CurrentRoutesScreen = () => {
               },
             );
 
-            setRoutes(prev =>
-              prev.filter(r => r.routeItemId !== item.routeItemId),
-            );
+        setRoutes(prev => {
+  const updatedRoutes = prev.filter(r => r.routeItemId !== item.routeItemId);
+  routesRef.current = updatedRoutes;  // Update the ref with new routes
+  return updatedRoutes;               // Update the state
+});
 
-              routesRef.current = updatedRoutes;  // <-- Update routesRef
-            return updatedRoutes;
             showMessage({message: 'Deleted', type: 'success'});
           } catch (err) {
-            console.log(err.response, 'Delete error');
+            console.log(err, 'Delete error');
             showMessage({message: 'Delete failed', type: 'danger'});
           }
         },

@@ -1,7 +1,6 @@
 import {createSlice, PayloadAction, createAsyncThunk} from '@reduxjs/toolkit';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
 
 type LocationType = {
@@ -46,10 +45,10 @@ export const getOneTimeLocation = createAsyncThunk(
 export const getAppToken = createAsyncThunk(
   'location/getAppToken',
   async () => {
-    const token = await messaging().getToken();
 
-    console.log(token, 'tokenenen');
-    return token;
+
+    console.log("token", 'tokenenen');
+    return "";
   },
 );
 

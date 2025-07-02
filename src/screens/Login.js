@@ -17,7 +17,6 @@ import {setUser} from '../store/slices/userSlice';
 import {ArrowLeft} from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {getUniqueId} from 'react-native-device-info';
-import messaging from '@react-native-firebase/messaging';
 import {useTranslation} from 'react-i18next';
 
 const Login = () => {
@@ -62,7 +61,7 @@ const Login = () => {
       const user = response.data;
       dispatch(setUser(user));
 
-      await messaging().subscribeToTopic('all');
+     
 
       showMessage({
         message: `Welcome, ${user.firstName}!`,

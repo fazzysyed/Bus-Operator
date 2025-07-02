@@ -1,20 +1,17 @@
 import 'react-native-gesture-handler';
 import React, {useState} from 'react';
 import {
-  StyleSheet,
-  View,
-  Alert,
+  
   SafeAreaView,
   StatusBar,
   Platform,
 } from 'react-native';
-import {FC} from 'react';
-import {AlarmScreen, Home, Login, TravelPassenger} from '../screens';
+
+
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Dropdown} from 'react-native-element-dropdown';
 
-import {useEffect} from 'react';
+
 
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import FlashMessage from 'react-native-flash-message';

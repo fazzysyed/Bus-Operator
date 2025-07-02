@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   StyleSheet,
   Text,
@@ -19,11 +19,9 @@ import {
 import {FC} from 'react';
 
 import BackgroundService from 'react-native-background-actions';
-import _, {set} from 'lodash';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import strings from '../lang/i18n.js';
-import Button from './Button';
-import SearchableDropdown from 'react-native-searchable-dropdown';
+
 import Geolocation from '@react-native-community/geolocation';
 
 // import Maps from './Maps';
@@ -43,11 +41,7 @@ import {
   User,
   X,
 } from 'lucide-react-native';
-import {
-  clearLocation,
-  setSearching,
-  updateLocation,
-} from '../store/slices/locationSlice';
+
 import {useNavigation} from '@react-navigation/native';
 import LanguageSelect from './LanguageSelect';
 import {getUniqueId} from 'react-native-device-info';
@@ -74,7 +68,8 @@ const BusOperator = () => {
   const [data2, setData2] = useState(null);
   const [serverData, setServerData] = useState([]);
   const [text, setText] = useState('');
-  const [alarmStarted, setAlarmStarted] = useState(false);
+const alarmStarted = useRef(false);
+
 
   const [input, setInput] = useState('');
   const [opo, setOpo] = useState(null);
@@ -136,8 +131,8 @@ const BusOperator = () => {
   };
 
   const checkDistance = (userLocation, busLocation, alarmDistance) => {
-    console.log('Testting', alarmDistance);
-    if (alarmStarted) {
+    console.log('Testting', alarmDistance,alarmStarted);
+    if (alarmStarted.current) {
       return;
     }
     if (!alarmDistance || !busLocation || !userLocation) {
@@ -153,20 +148,24 @@ const BusOperator = () => {
       const preciseDistance = getPreciseDistance(busLocation, userLocation);
       const distanceInKm = preciseDistance / 1000;
 
+      console.log(distanceInKm,"distanceInKmdistanceInKmdistanceInKm")
+
       if (distanceInKm <= parseFloat(alarmDistance)) {
         console.log(distanceInKm, 'Distance in KM', alarmDistance);
+
+            alarmStarted.current = true;
         notifee.displayNotification({
           title: 'Bus Tracking',
           body: `The Bus Operator is ${distanceInKm.toFixed(2)} km away`,
           android: {
-            channelId: 'bus',
-            sound: 'alarm',
+            channelId: 'busalarm',
+            sound: 'alarmsound',
             pressAction: {
               id: 'default',
             },
           },
         });
-        setAlarmStarted(true);
+    
       }
     } catch (error) {
       console.error('Error checking distance:', error);
@@ -238,7 +237,9 @@ const BusOperator = () => {
         });
       }
     } catch (error) {
-      console.error('Error in getPassengerToken:', error);
+      console.error('Error in aa:', error);
+
+   
 
       const errorMsg =
         error?.response?.data?.message ||
@@ -255,7 +256,7 @@ const BusOperator = () => {
 
   const fetchIntervalAndStartService = async () => {
     try {
-      const seconds = 30;
+      const seconds = 15;
       setIntervalSeconds(seconds);
       startLocationService(seconds);
     } catch (err) {}
@@ -302,6 +303,8 @@ const BusOperator = () => {
     Keyboard.dismiss();
 
     try {
+
+
       const appToken = await getUniqueId();
 
       // First request: start tracking
@@ -320,6 +323,8 @@ const BusOperator = () => {
       );
 
       if (response?.data?.token) {
+
+          alarmStarted.current= false
         AsyncStorage.removeItem('Offline');
         const token = response.data.token;
 
@@ -370,8 +375,10 @@ const BusOperator = () => {
         });
       }
     } catch (error) {
-      console.error('Error in getPassengerToken:', error);
-
+      // console.error('Error in getPassengerToken:', error);
+  alarmStarted.current= false
+         setData2(null)
+BackgroundService.stop();
       const errorMsg =
         error?.response?.data?.message ||
         error?.message ||
@@ -476,6 +483,7 @@ const BusOperator = () => {
                   text: 'OK',
                   onPress: () => {
                     setAlaram(0);
+                    alarmStarted.current= false
                     AsyncStorage.removeItem('AlarmDistance');
                     setData2(null);
                     setInput('');

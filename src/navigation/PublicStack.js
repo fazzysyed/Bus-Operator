@@ -1,7 +1,7 @@
 // PublicStack.js
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {AlarmScreen, Home, Login, TravelPassenger} from '../screens';
+import {AlarmScreen, Login} from '../screens';
 import BusOperator from '../components/BusOperator';
 
 const Stack = createStackNavigator();
