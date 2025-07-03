@@ -112,6 +112,7 @@ const alarmStarted = useRef(false);
     // getOfflineData();
     return () => {
       BackgroundService.stop();
+    
     };
   }, []);
 
@@ -482,6 +483,7 @@ BackgroundService.stop();
                 {
                   text: 'OK',
                   onPress: () => {
+                    BackgroundService.stop()
                     setAlaram(0);
                     alarmStarted.current= false
                     AsyncStorage.removeItem('AlarmDistance');

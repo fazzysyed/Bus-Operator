@@ -10,6 +10,7 @@ import {
   Alert,
   
   Platform,
+
 } from 'react-native';
 import axios from 'axios';
 import {useFocusEffect} from '@react-navigation/native';
@@ -49,6 +50,7 @@ const CurrentRoutesScreen = () => {
 
   // Keep routesRef updated with the latest routes
   useEffect(() => {
+
     routesRef.current = routes;
   }, [routes]);
 
@@ -117,43 +119,44 @@ const CurrentRoutesScreen = () => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
-  const startLocationService = async interval => {
-    const options = {
-      taskName: 'LocationUpdate',
-      taskTitle: 'Bus tracking active',
-      taskDesc: 'Updating current bus location',
-      taskIcon: {
-        name: 'ic_launcher',
-        type: 'mipmap',
-      },
-      color: '#3b82f6',
-      parameters: {
-        delay: interval * 1000, // Use the interval dynamically
-      },
-    };
+const startLocationService = async interval => {
+  const options = {
+    taskName: 'LocationUpdate',
+    taskTitle: 'Bus tracking active',
+    taskDesc: 'Updating current bus location',
+    taskIcon: {
+      name: 'ic_launcher',
+      type: 'mipmap',
+    },
+    color: '#3b82f6',
+    parameters: {
+      delay: interval * 1000,
+    },
+  };
 
-    const veryPreciseTask = async taskData => {
-      const {delay} = taskData;
-      while (BackgroundService.isRunning()) {
-        await updateLocation();
-        await sleep(delay);
-      }
-    };
-
-    try {
-      if (!(await BackgroundService.isRunning())) {
-        await BackgroundService.start(veryPreciseTask, options);
-        console.log('Background service started');
-      } else {
-        console.log('Background service already running');
-      }
-    } catch (error) {
-      console.log('Error starting background service:', error);
+  const veryPreciseTask = async taskData => {
+    const { delay } = taskData;
+    while (BackgroundService.isRunning()) {
+      await updateLocation();
+      await sleep(delay);
     }
   };
 
+  try {
+    if (await BackgroundService.isRunning()) {
+      await BackgroundService.stop(); // 🔴 Important: stop any previous instance
+    }
+    await BackgroundService.start(veryPreciseTask, options);
+    console.log('Background service started');
+  } catch (error) {
+    console.log('Error starting background service:', error);
+  }
+};
+
+
   const updateLocation = async () => {
     if (!routesRef.current.length) {
+      BackgroundService.stop()
       console.log('No routes available; skipping location update');
       return;
     }
@@ -163,6 +166,8 @@ const CurrentRoutesScreen = () => {
         const {latitude, longitude} = pos.coords;
 
         let getAppToken = await getUniqueId();
+
+        console.log(getAppToken,"getAppTokengetAppTokengetAppToken")
         try {
           const promises = routesRef.current.map(route => {
             const payload = {
@@ -256,7 +261,7 @@ const CurrentRoutesScreen = () => {
 
             showMessage({message: 'Deleted', type: 'success'});
           } catch (err) {
-            console.log(err, 'Delete error');
+            console.log(err.response, 'Delete error');
             showMessage({message: 'Delete failed', type: 'danger'});
           }
         },
@@ -274,11 +279,13 @@ const CurrentRoutesScreen = () => {
   );
 
   const renderItem = ({item}) => (
+
     <Swipeable renderRightActions={() => renderRightActions(item)}>
       <View style={styles.card}>
         <View style={styles.row}>
           <Bus color="#3b82f6" size={20} />
           <Text style={styles.textBold}> {item.routeItemToken}</Text>
+               <Text style={styles.textBold}>  {item?.vehicleRegistration ?  `-${item.vehicleRegistration}` : ""}</Text>
         </View>
         <View style={styles.row}>
           <MapPinned color="#10b981" size={20} />

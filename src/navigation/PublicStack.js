@@ -1,7 +1,7 @@
 // PublicStack.js
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {AlarmScreen, Login} from '../screens';
+import { Login} from '../screens';
 import BusOperator from '../components/BusOperator';
 
 const Stack = createStackNavigator();
@@ -25,13 +25,13 @@ const PublicStack = () => {
       />
       <Stack.Screen name="Login" component={Login} />
 
-      <Stack.Screen
+      {/* <Stack.Screen
         name="Alarm"
         component={AlarmScreen}
         options={{
           headerTransparent: false,
         }}
-      />
+      /> */}
     </Stack.Navigator>
   );
 };
