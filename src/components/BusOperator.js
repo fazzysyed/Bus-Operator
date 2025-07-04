@@ -110,10 +110,8 @@ const alarmStarted = useRef(false);
   useEffect(() => {
     getUserLocation();
     // getOfflineData();
-    return () => {
-      BackgroundService.stop();
-    
-    };
+ 
+
   }, []);
 
   const getUserLocation = () => {

@@ -22,6 +22,8 @@ import {
   MapPinned,
   Trash2,
   LogOut,
+  SquareRoundCorner,
+  Asterisk,
 } from 'lucide-react-native';
 import {useAppSelector} from '../../Hooks/reduxHooks';
 import {useNavigation} from '@react-navigation/native';
@@ -282,11 +284,22 @@ const startLocationService = async interval => {
 
     <Swipeable renderRightActions={() => renderRightActions(item)}>
       <View style={styles.card}>
-        <View style={styles.row}>
+
+            <View style={styles.row}>
           <Bus color="#3b82f6" size={20} />
-          <Text style={styles.textBold}> {item.routeItemToken}</Text>
-               <Text style={styles.textBold}>  {item?.vehicleRegistration ?  `-${item.vehicleRegistration}` : ""}</Text>
+        
+               <Text style={styles.textBold}>  {  `${item.vehicleRegistration}`}</Text>
         </View>
+        <View style={styles.row}>
+          <Asterisk color="red" size={20} />
+
+         
+
+         
+          <Text style={styles.textBold}> {item.routeItemToken}</Text>
+       
+        </View>
+
         <View style={styles.row}>
           <MapPinned color="#10b981" size={20} />
           <Text style={styles.textNormal}> {item.route}</Text>
